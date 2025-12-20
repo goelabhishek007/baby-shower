@@ -1,4 +1,4 @@
-const BASE = import.meta.env.VITE_API_BASE;
+const BASE = import.meta.env.VITE_API_BASE || "http://localhost:3001";
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
@@ -16,3 +16,43 @@ export const api = {
   submitRSVP: (payload) => request("/api/submit-rsvp", { method: "POST", body: JSON.stringify(payload) }),
   getRSVPs: () => request("/api/rsvps"),
 };
+
+//export async function checkGuest(name) {
+//  const res = await fetch(`${API_BASE}/api/check-guest`, {
+//    method: "POST",
+//    headers: { "Content-Type": "application/json" },
+//    body: JSON.stringify({ name }),
+//  });
+//  return res.json();
+//}
+//
+//export async function checkGuest(name) {
+//  const res = await fetch(`${API_BASE}/api/check-guest`, {
+//    method: "POST",
+//    headers: { "Content-Type": "application/json" },
+//    body: JSON.stringify({ name }),
+//  });
+//  return res.json();
+//}
+
+export function checkGuest(name) {
+  return request("/api/check-guest", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function submitRSVP(primaryGuest, attendees) {
+  return request("/api/submit-rsvp", {
+    method: "POST",
+    body: JSON.stringify({ primaryGuest, attendees }),
+  });
+}
+
+export function getRSVPs() {
+  return request("/api/rsvps", { method: "GET" });
+}
+
+export function health() {
+  return request("/api/health", { method: "GET" });
+}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import { checkGuest, submitRSVP } from "./lib/api";
 import {
   Baby,
   CalendarDays,
