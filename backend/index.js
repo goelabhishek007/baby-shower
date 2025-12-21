@@ -33,9 +33,10 @@ async function sendRSVPEmail(rsvpData) {
   const { primaryGuest, attendees, guestEmail } = rsvpData;
 
   // Count adults and children
+  attendees.unshift({name: primaryGuest, age: 'adult'})
   const adults = attendees.filter(a => a.age === 'adult').length;
   const children = attendees.filter(a => a.age === 'child').length;
-  const totalCount = attendees.length+1;
+  const totalCount = attendees.length;
 
   // Create attendee list
   const attendeeList = attendees.map((a, i) =>
@@ -194,7 +195,7 @@ async function sendRSVPEmail(rsvpData) {
           <div class="attendees">
             ${attendeeList
               .split('\n')
-              .map(name => `• ${name}`)
+              .map(name => `${name}`)
               .join('<br/>')}
           </div>
         </div>
@@ -259,7 +260,7 @@ app.post('/api/check-guest', async (req, res) => {
       res.json({ found: false });
     }
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
+    res.status(400).json({ error: 'Guest Not Found' });
   }
 });
 
@@ -274,7 +275,7 @@ app.post('/api/submit-rsvp', async (req, res) => {
 
     const guestResult = guest.get(primaryGuest.trim())[0];
     guestResult.rsvps = attendees;
-    console.log(guestResult);
+//    console.log(guestResult);
 
     const emailResult = await sendRSVPEmail({
           primaryGuest,
@@ -302,10 +303,10 @@ app.get('/api/rsvps', async (req, res) => {
     const rsvp = {}
     for (const [name, data] of guest) {
       console.log(`${name}s RSVPs`);
-      console.log(data[0]);
       rsvp.guest_name = name;
       rsvp.attendee_count = data[0].rsvps.length;
       rsvp.attendees = data[0].rsvps.map(p => p.name).join(', ');
+      console.log(rsvp);
       result.push(rsvp)
     }
 
