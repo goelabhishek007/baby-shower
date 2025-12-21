@@ -17,7 +17,6 @@ const app = express();
  * CORS: allow local dev + your deployed frontend(s).
  * Add your Vercel prod URL and preview URLs here if needed.
  */
-const cors = require("cors");
 
 const allowedOrigins = [
   "http://localhost:5173",
