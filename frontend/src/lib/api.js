@@ -67,33 +67,4 @@ export const api = {
     request("/api/admin/rsvps", { method: "GET", headers: { "x-admin-key": adminKey } }),
 };
 
-async function request(path, options = {}) {
-  const headers = {
-    ...(options.headers || {}),
-  };
-
-  // If body is a plain object, stringify it and set JSON content-type
-  let body = options.body;
-  const isPlainObject =
-    body && typeof body === "object" && !(body instanceof FormData) && !(body instanceof Blob);
-
-  if (isPlainObject) {
-    body = JSON.stringify(body);
-    headers["Content-Type"] = "application/json";
-  } else {
-    // If caller already passed a string body, ensure content-type is correct
-    headers["Content-Type"] = headers["Content-Type"] || "application/json";
-  }
-
-  const res = await fetch(`${BASE}${path}`, {
-    ...options,
-    headers,
-    body,
-  });
-
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data?.error || "Request failed");
-  return data;
-}
-
 
