@@ -1,5 +1,5 @@
-const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:3001";
-//const BASE = "http://localhost:3001";
+const BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:3001").replace(/\/$/, "");
+
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
@@ -12,58 +12,39 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  checkGuest: (name) => request("/api/check-guest", { method: "POST", body: JSON.stringify({name}) }),
-  submitRSVP: (payload) => request("/api/submit-rsvp", { method: "POST", body: JSON.stringify(payload) }),
-  getRSVPs: () => request("/api/rsvps"),
+  // Guest APIs
+  checkGuest: (name) =>
+    request("/api/check-guest", { method: "POST", body: JSON.stringify({ name }) }),
+
+  submitRSVP: (payload) =>
+    request("/api/submit-rsvp", { method: "POST", body: JSON.stringify(payload) }),
+
+  health: () => request("/api/health", { method: "GET" }),
+
+  // Admin APIs (host dashboard only)
+  adminListGuests: (adminKey) =>
+    request("/api/admin/guests", { method: "GET", headers: { "x-admin-key": adminKey } }),
+
+  adminAddGuest: (adminKey, payload) =>
+    request("/api/admin/guests", {
+      method: "POST",
+      headers: { "x-admin-key": adminKey },
+      body: JSON.stringify(payload),
+    }),
+
+  adminUpdateGuest: (adminKey, id, payload) =>
+    request(`/api/admin/guests/${id}`, {
+      method: "PATCH",
+      headers: { "x-admin-key": adminKey },
+      body: JSON.stringify(payload),
+    }),
+
+  adminDeleteGuest: (adminKey, id) =>
+    request(`/api/admin/guests/${id}`, {
+      method: "DELETE",
+      headers: { "x-admin-key": adminKey },
+    }),
+
+  adminListRsvps: (adminKey) =>
+    request("/api/admin/rsvps", { method: "GET", headers: { "x-admin-key": adminKey } }),
 };
-
-//export async function checkGuest(name) {
-//console.log(API_BASE)
-//  const res = await fetch(`${API_BASE}/api/check-guest`, {
-//    method: "POST",
-//    headers: { "Content-Type": "application/json" },
-//    body: JSON.stringify({ name }),
-//  });
-//  return res.json();
-//}
-//
-//export async function submitRSVP(primaryGuest, attendees) {
-//console.log(BASE)
-//  const res = await fetch(`${API_BASE}/api/submit-rsvp`, {
-//    method: "POST",
-//    headers: { "Content-Type": "application/json" },
-//    body: JSON.stringify({ primaryGuest, attendees }),
-//  });
-//  return res.json();
-//}
-
-//export async function checkGuest(name) {
-//  const res = await fetch(`${API_BASE}/api/check-guest`, {
-//    method: "POST",
-//    headers: { "Content-Type": "application/json" },
-//    body: JSON.stringify({ name }),
-//  });
-//  return res.json();
-//}
-
-export function checkGuest(name) {
-  return request("/api/check-guest", {
-    method: "POST",
-    body: JSON.stringify({ name }),
-  });
-}
-
-export function submitRSVP(primaryGuest, attendees) {
-  return request("/api/submit-rsvp", {
-    method: "POST",
-    body: JSON.stringify({ primaryGuest, attendees }),
-  });
-}
-
-export function getRSVPs() {
-  return request("/api/rsvps", { method: "GET" });
-}
-
-export function health() {
-  return request("/api/health", { method: "GET" });
-}
