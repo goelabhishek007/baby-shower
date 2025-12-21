@@ -2,52 +2,39 @@ const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
+const { Resend } = require("resend");
 
+const resend = new Resend(process.env.RESEND_API_KEY);
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-
-// Email transporter configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
-
-// Verify email configuration on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('❌ Email configuration error:', error.message);
-    console.error('Please check your EMAIL_USER and EMAIL_PASSWORD in .env');
-  } else {
-    console.log('✅ Email server is ready to send messages');
-  }
-});
-
-
-// Function to send RSVP email to host
+// Function to send RSVP email to host (Resend)
 async function sendRSVPEmail(rsvpData) {
-  const { primaryGuest, attendees, guestEmail } = rsvpData;
+  const { primaryGuest, attendees = [], guestEmail } = rsvpData;
+
+  // IMPORTANT: don't mutate incoming array (unshift mutates)
+  const allAttendees = [{ name: primaryGuest, age: "adult" }, ...attendees];
 
   // Count adults and children
-  attendees.unshift({name: primaryGuest, age: 'adult'})
-  const adults = attendees.filter(a => a.age === 'adult').length;
-  const children = attendees.filter(a => a.age === 'child').length;
-  const totalCount = attendees.length;
+  const adults = allAttendees.filter((a) => a.age === "adult").length;
+  const children = allAttendees.filter((a) => a.age === "child").length;
+  const totalCount = allAttendees.length;
 
   // Create attendee list
-  const attendeeList = attendees.map((a, i) =>
-    `${i + 1}. ${a.name} (${a.age === 'child' ? 'Child' : 'Adult'})`
-  ).join('\n');
+  const attendeeList = allAttendees
+    .map(
+      (a, i) => `${i + 1}. ${a.name} (${a.age === "child" ? "Child" : "Adult"})`
+    )
+    .join("\n");
 
-  const mailOptions = {
-    from: `"Baby Shower RSVP 💙" <${process.env.EMAIL_USER}>`,
-    to: process.env.EMAIL_HOST_EMAIL,
-    subject: `🎉 New RSVP from ${primaryGuest}`,
-    html: `
+  // Resend requires a verified "from" (onboarding@resend.dev works for testing)
+  const fromEmail =
+    process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+  const subject = `🎉 New RSVP from ${primaryGuest}`;
+
+  const html = `
   <!DOCTYPE html>
   <html>
   <head>
@@ -172,7 +159,7 @@ async function sendRSVPEmail(rsvpData) {
         <div class="card">
           <h3>👤 Primary Guest</h3>
           <p><strong>${primaryGuest}</strong></p>
-          ${guestEmail ? `<p>📧 ${guestEmail}</p>` : ''}
+          ${guestEmail ? `<p>📧 ${guestEmail}</p>` : ""}
         </div>
 
         <div class="stats">
@@ -194,9 +181,9 @@ async function sendRSVPEmail(rsvpData) {
           <h3>👨‍👩‍👧‍👦 Attending Party</h3>
           <div class="attendees">
             ${attendeeList
-              .split('\n')
-              .map(name => `${name}`)
-              .join('<br/>')}
+              .split("\n")
+              .map((line) => `${line}`)
+              .join("<br/>")}
           </div>
         </div>
 
@@ -215,19 +202,25 @@ async function sendRSVPEmail(rsvpData) {
     </div>
   </body>
   </html>
-  `
-  };
-
+  `;
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully:', info.messageId);
-    return { success: true, messageId: info.messageId };
+    const result = await resend.emails.send({
+      from: `"Baby Shower RSVP 💙" <${fromEmail}>`,
+      to: [process.env.EMAIL_HOST_EMAIL],
+      subject,
+      html,
+    });
+
+    // Resend returns { id: "..."} on success
+    console.log("✅ Email sent successfully (Resend):", result?.id || result);
+    return { success: true, messageId: result?.id };
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
-    return { success: false, error: error.message };
+    console.error("❌ Email sending failed (Resend):", error?.message || error);
+    return { success: false, error: error?.message || String(error) };
   }
 }
+
 
 const guest = new Map();
 
