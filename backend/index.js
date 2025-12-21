@@ -17,23 +17,30 @@ const app = express();
  * CORS: allow local dev + your deployed frontend(s).
  * Add your Vercel prod URL and preview URLs here if needed.
  */
+const cors = require("cors");
+
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_ORIGIN, // e.g. https://baby-shower-five-taupe.vercel.app
-].filter(Boolean);
+  "http://127.0.0.1:5173",
+  "https://baby-shower-five-taupe.vercel.app" // ✅ your Vercel frontend
+];
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      // allow curl/postman (no origin)
+      // allow server-to-server and curl requests with no origin
       if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("Not allowed by CORS: " + origin));
+      return cb(new Error(`CORS blocked for origin: ${origin}`));
     },
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "x-admin-key"],
   })
 );
+
+// ✅ make sure preflight requests succeed
+app.options("*", cors());
+
 
 app.use(express.json());
 
