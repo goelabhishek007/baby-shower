@@ -19,7 +19,7 @@ const app = express();
  */
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://baby-shower-five-taupe.vercel.app"
+  "https://baby-shower-five-taupe.vercel.app",
   process.env.FRONTEND_ORIGIN, // e.g. https://baby-shower-five-taupe.vercel.app
 ].filter(Boolean);
 
