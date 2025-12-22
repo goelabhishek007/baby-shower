@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 const allowedOrigins = [
   "http://localhost:5173",
   "https://baby-shower-five-taupe.vercel.app",
+  "https://evann-abhishek-baby-shower.vercel.app",
   process.env.FRONTEND_ORIGIN, // e.g. https://baby-shower-five-taupe.vercel.app
 ].filter(Boolean);
 
