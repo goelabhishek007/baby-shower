@@ -5,6 +5,8 @@ const { Resend } = require("resend");
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 /**
  * CORS: allow local dev + your deployed frontend(s).
@@ -24,12 +26,11 @@ app.use(
       if (allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error("Not allowed by CORS: " + origin));
     },
-    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "x-admin-key"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "X-Admin-Key", "x-admin-key"],
   })
 );
 
-app.use(express.json());
 
 /** ---------------- Clients ---------------- */
 const resend = new Resend(process.env.RESEND_API_KEY);

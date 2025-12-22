@@ -75,7 +75,7 @@ export default function InvitePage() {
       // ✅ nicer comfy dress code
       dressCode: "Wear whatever makes you feel comfortable — cozy, casual, and totally you 💙",
       note:
-        "We’re so excited to celebrate our little star with you. Come for smiles, snacks, and sweet memories.",
+        "Join us for a cozy baby shower filled with love, laughter, and sweet memories as we get ready to welcome our little one.",
     }),
     []
   );
@@ -166,6 +166,21 @@ export default function InvitePage() {
           </Twinkle>
         </div>
 
+        {/* RSVP deadline banner */}
+        <div className="mx-auto max-w-5xl px-4">
+          <div className="mt-3 rounded-2xl bg-white/80 shadow-soft ring-1 ring-black/5 px-4 py-3 flex items-start gap-3">
+            <div className="shrink-0 rounded-xl bg-blue-100 p-2 ring-1 ring-black/5">📌</div>
+            <div className="min-w-0">
+              <div className="font-semibold text-slate-900">
+                Please RSVP by <span className="underline underline-offset-4">January 10, 2026</span>
+              </div>
+              <div className="text-sm text-slate-600">
+                It helps us plan food, seating, and all the cute little details 💙
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* NAV */}
         <div className="relative z-30 backdrop-blur bg-white/60 border-b border-white/40">
           <div className="mx-auto max-w-5xl px-4 py-3 flex items-center justify-between">
@@ -209,10 +224,10 @@ export default function InvitePage() {
               </div>
 
               <h1 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight">
-                Welcome to our
-                <span className="block">
-                  Baby Shower <span className="align-middle">💙</span>
-                </span>
+                Welcome to our Baby Shower <span className="align-middle">💙</span>
+{/*                 <span className="block"> */}
+{/*                   Baby Shower <span className="align-middle">💙</span> */}
+{/*                 </span> */}
               </h1>
 
               <p className="mt-3 text-slate-700 text-lg">{event.note}</p>
@@ -335,7 +350,7 @@ export default function InvitePage() {
         </Section>
 
         {/* ✅ RSVP (no email field; no find name; max 10) */}
-        <Section id="rsvp" title="RSVP" icon={Send} subtitle="RSVP by 10th Jan 2026">
+        <Section id="rsvp" title="RSVP" icon={Send} subtitle="Kindly RSVP by January 10, 2026">
           <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
             <div className="flex items-center gap-2">
               <div className="rounded-2xl bg-blue-100 p-2 ring-1 ring-black/5">
@@ -378,26 +393,29 @@ export default function InvitePage() {
                 <div className="mt-3 grid gap-2">
                   {attendees.map((a, idx) => (
                     <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px_44px] gap-2 items-center">
                         <input
                           value={a.name}
                           onChange={(e) => updateAttendee(idx, { name: e.target.value })}
-                          className="flex-1 rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
+                          className="min-w-0 w-full rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
                           placeholder={`Guest ${idx + 1} name`}
                         />
+
                         <select
                           value={a.age}
                           onChange={(e) => updateAttendee(idx, { age: e.target.value })}
-                          className="rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
+                          className="w-full rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
                         >
                           <option value="adult">Adult</option>
                           <option value="child">Child</option>
                         </select>
+
                         <button
                           type="button"
                           onClick={() => removeAttendee(idx)}
-                          className="rounded-2xl px-3 py-2 bg-white ring-1 ring-black/10 hover:bg-slate-50 active:scale-[0.98] transition"
+                          className="h-10 w-full sm:w-10 grid place-items-center rounded-2xl bg-white ring-1 ring-black/10 hover:bg-slate-50 active:scale-[0.98] transition"
                           title="Remove"
+                          aria-label="Remove"
                         >
                           ✕
                         </button>

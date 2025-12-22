@@ -75,8 +75,8 @@ export default function HostDashboard() {
 
   async function save() {
     setError("");
-    const primaryGuest = String(primaryName || "").trim();
-    if (!primaryGuest) {
+    const primaryGuest = (primaryName ?? "").toString().trim();
+    if (primaryGuest.length === 0) {
       setError("Primary guest name is required.");
       return;
     }
@@ -86,11 +86,13 @@ export default function HostDashboard() {
       .filter((a) => a.name.length > 0)
       .slice(0, MAX_PLUS_ONES);
 
+    const payload = { primaryGuest, attendees: cleaned };
+
     try {
       if (editingId === "new") {
-        await api.admin.createRSVP(adminKey, { primaryGuest, attendees: cleaned });
+        await api.admin.createRSVP(adminKey, payload);
       } else {
-        await api.admin.updateRSVP(adminKey, editingId, { primaryGuest, attendees: cleaned });
+        await api.admin.updateRSVP(adminKey, editingId, payload);
       }
       cancelEdit();
       await refresh(adminKey);
@@ -204,25 +206,29 @@ export default function HostDashboard() {
             <div className="mt-3 space-y-2">
               {attendees.map((a, idx) => (
                 <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px_44px] gap-2 items-center">
                     <input
                       value={a.name}
                       onChange={(e) => updateAttendee(idx, { name: e.target.value })}
-                      className="flex-1 rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                      className="min-w-0 w-full rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
                       placeholder={`Guest ${idx + 1} name`}
                     />
+
                     <select
                       value={a.age}
                       onChange={(e) => updateAttendee(idx, { age: e.target.value })}
-                      className="rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                      className="w-full rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
                     >
                       <option value="adult">Adult</option>
                       <option value="child">Child</option>
                     </select>
+
                     <button
-                      className="rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                      type="button"
+                      className="h-10 w-full sm:w-10 grid place-items-center rounded-2xl bg-white ring-1 ring-black/10"
                       onClick={() => removeAttendee(idx)}
                       title="Remove"
+                      aria-label="Remove"
                     >
                       ✕
                     </button>
@@ -235,6 +241,7 @@ export default function HostDashboard() {
           </div>
 
           <button
+            type="button"
             className="mt-4 rounded-2xl bg-[#EAF6FF] px-4 py-3 font-semibold ring-1 ring-black/5 hover:bg-[#DDF0FF] transition"
             onClick={save}
           >

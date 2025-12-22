@@ -27,27 +27,27 @@ export const api = {
     listRSVPs: (adminKey) =>
       request("/api/admin/rsvps", {
         method: "GET",
-        headers: { "X-Admin-Key": adminKey },
+        headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
       }),
 
     createRSVP: (adminKey, payload) =>
       request("/api/admin/rsvps", {
         method: "POST",
-        headers: { "X-Admin-Key": adminKey },
+        headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
         body: JSON.stringify(payload),
       }),
 
     updateRSVP: (adminKey, id, payload) =>
       request(`/api/admin/rsvps/${id}`, {
         method: "PATCH",
-        headers: { "X-Admin-Key": adminKey },
+        headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
         body: JSON.stringify(payload),
       }),
 
     deleteRSVP: (adminKey, id) =>
       request(`/api/admin/rsvps/${id}`, {
         method: "DELETE",
-        headers: { "X-Admin-Key": adminKey },
+        headers: { "Content-Type": "application/json", "X-Admin-Key": adminKey },
       }),
   },
 };
