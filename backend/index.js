@@ -139,14 +139,6 @@ async function sendRSVPEmail({ primaryGuest, attendees = [] }) {
           </div>
         </div>
 
-//        <div class="card">
-//          <h3>📅 Event Details</h3>
-//          <p><strong>Date:</strong> Saturday, Jan 31st, 2026</p>
-//          <p><strong>Time:</strong> 12:30 PM</p>
-//          <p><strong>Location:</strong> Issaquah Community Center</p>
-//        </div>
-//      </div>
-
       <div class="footer">
         <p>Automated notification from your Baby Shower RSVP system.</p>
         <p>Submitted at: ${new Date().toLocaleString()}</p>
