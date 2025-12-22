@@ -316,7 +316,7 @@ export default function InvitePage() {
         */}
 
         {/* REGISTRY */}
-        <Section id="registry" title="Registry" icon={Gift} subtitle="If you’d like to bring a gift, here are our registries 💙">
+        <Section id="registry" title="Registry" icon={Gift} subtitle="Gifts are not expected, but for those who wish to, we’ve shared our registries below 💙">
           <div className="flex flex-col sm:flex-row gap-3">
             <a
               href={event.amazonRegistry}
