@@ -1,18 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Baby,
-  CalendarDays,
-  MapPin,
-  Gift,
-  Shirt,
-  Sparkles,
-  Heart,
-  Send,
-  Images,
-  Star,
-  Moon,
-} from "lucide-react";
+import { Baby, CalendarDays, MapPin, Gift, Shirt, Sparkles, Heart, Send, Star, Moon } from "lucide-react";
 import { api } from "../lib/api";
 
 const cx = (...c) => c.filter(Boolean).join(" ");
@@ -68,74 +56,12 @@ function Section({ id, title, icon: Icon, subtitle, children }) {
   );
 }
 
-function MobileAccordionSection({
-  id,
-  title,
-  subtitle,
-  icon: Icon,
-  open,
-  setOpen,
-  children,
-}) {
-  return (
-    <section id={id} className="py-6 scroll-mt-24 md:hidden">
-      <div className="mx-auto max-w-5xl px-4">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="w-full text-left"
-          aria-expanded={open}
-          aria-controls={`${id}-panel`}
-        >
-          <div className="flex items-start gap-3 rounded-3xl bg-white/70 p-4 shadow-soft ring-1 ring-black/5">
-            <div className="rounded-2xl bg-white/70 p-3 shadow-soft ring-1 ring-black/5">
-              <Icon className="h-6 w-6" />
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl font-semibold">{title}</h2>
-                  {subtitle ? (
-                    <p className="mt-1 text-slate-600">{subtitle}</p>
-                  ) : null}
-                </div>
-
-                <div className="shrink-0">
-                  <div className="rounded-full bg-white/70 px-3 py-2 text-sm shadow-soft ring-1 ring-black/5">
-                    {open ? "Hide" : "Show"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </button>
-
-        <motion.div
-          id={`${id}-panel`}
-          initial={false}
-          animate={open ? { height: "auto", opacity: 1 } : { height: 0, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          className="overflow-hidden"
-        >
-          <div className="mt-4 rounded-3xl bg-white/75 p-4 shadow-soft ring-1 ring-black/5">
-            {children}
-          </div>
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
 const fadeUp = {
   hidden: { opacity: 0, y: 14 },
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
 export default function InvitePage() {
-  const [openExpect, setOpenExpect] = useState(false);
-  const [openPhotos, setOpenPhotos] = useState(false);
-
   const event = useMemo(
     () => ({
       babyName: "Our Baby Boy",
@@ -144,49 +70,26 @@ export default function InvitePage() {
       timeLabel: "12:00 PM",
       locationLabel: "Issaquah Community Center",
       mapsUrl: "https://maps.google.com/?q=Issaquah%20Community%20Center",
-      amazonRegistry:
-        "https://www.amazon.com/baby-reg/evann-goel-march-2026-issaquah/426YVA1Z363P",
+      amazonRegistry: "https://www.amazon.com/baby-reg/evann-goel-march-2026-issaquah/426YVA1Z363P",
       babylistRegistry: "https://my.babylist.com/evann-goel",
-      dressCode: "Pastels / cozy neutrals 💙 (sky blue welcome!)",
+      // ✅ nicer comfy dress code
+      dressCode: "Wear whatever makes you feel comfortable — cozy, casual, and totally you 💙",
       note:
         "We’re so excited to celebrate our little star with you. Come for smiles, snacks, and sweet memories.",
     }),
     []
   );
 
-  // RSVP state
+  // RSVP state (open to all; max 10 plus-ones)
   const [name, setName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [step, setStep] = useState("check"); // check | form | done
-  const [guestInfo, setGuestInfo] = useState(null);
-  const [attendees, setAttendees] = useState([{ name: "", age: "adult" }]);
+  const [attendees, setAttendees] = useState([]); // plus-ones only
   const [status, setStatus] = useState({ type: "", msg: "" });
   const [loading, setLoading] = useState(false);
 
-  const maxSlots = guestInfo?.totalSlots ?? 0;
+  const MAX_PLUS_ONES = 10;
 
   function setMsg(type, msg) {
     setStatus({ type, msg });
-  }
-
-  async function onCheckGuest(e) {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("", "");
-    try {
-      const data = await api.checkGuest(name);
-      if (!data.found) {
-        setMsg("warn", "I couldn’t find that name on the guest list. Try the full name 💙");
-        return;
-      }
-      setGuestInfo(data);
-      setStep("form");
-      setMsg("ok", `Found you! You can add up to ${data.totalSlots} guest(s).`);
-    } catch (err) {
-      setMsg("error", err.message);
-    } finally {
-      setLoading(false);
-    }
   }
 
   function updateAttendee(i, patch) {
@@ -194,7 +97,7 @@ export default function InvitePage() {
   }
 
   function addAttendee() {
-    if (attendees.length >= maxSlots) return;
+    if (attendees.length >= MAX_PLUS_ONES) return;
     setAttendees((prev) => [...prev, { name: "", age: "adult" }]);
   }
 
@@ -207,25 +110,27 @@ export default function InvitePage() {
     setLoading(true);
     setMsg("", "");
 
-    const cleaned = attendees
-      .map((a) => ({ ...a, name: (a.name || "").trim() }))
-      .filter((a) => a.name.length > 0);
-
-    if (cleaned.length === 0) {
+    const primaryGuest = (name || "").trim();
+    if (!primaryGuest) {
       setLoading(false);
-      setMsg("warn", "Please add at least one attendee name 😊");
+      setMsg("warn", "Please enter your name 😊");
       return;
     }
 
+    const cleaned = attendees
+      .map((a) => ({ ...a, name: (a.name || "").trim() }))
+      .filter((a) => a.name.length > 0)
+      .slice(0, MAX_PLUS_ONES);
+
     try {
       await api.submitRSVP({
-        primaryGuest: name.trim(),
-        guestEmail: guestEmail.trim(),
+        primaryGuest,
         attendees: cleaned,
       });
 
-      setStep("done");
       setMsg("ok", "RSVP received! 🎉 Can’t wait to celebrate with you 💙");
+      setName("");
+      setAttendees([]);
     } catch (err) {
       setMsg("error", err.message);
     } finally {
@@ -238,10 +143,7 @@ export default function InvitePage() {
       <div className="fixed inset-0 -z-10 bg-white/25 backdrop-blur-[2px]" />
       <div id="top" className="min-h-screen">
         {/* Background photo */}
-        <div
-          className="fixed inset-0 -z-10 bg-center bg-cover"
-          style={{ backgroundImage: "url(/bg2.png)" }}
-        >
+        <div className="fixed inset-0 -z-10 bg-center bg-cover" style={{ backgroundImage: "url(/bg2.png)" }}>
           <div className="absolute inset-0 bg-white/35" />
           <div className="absolute inset-0 bg-gradient-to-b from-sky-100/25 via-white/20 to-emerald-50/25" />
           <div className="absolute inset-0 backdrop-blur-[0.5px]" />
@@ -280,7 +182,7 @@ export default function InvitePage() {
               {[
                 ["Details", "#details"],
                 ["Expect", "#expect"],
-                ["Photos", "#gallery"],
+                // photos removed for now
                 ["Registry", "#registry"],
                 ["Dress", "#dresscode"],
                 ["RSVP", "#rsvp"],
@@ -347,7 +249,7 @@ export default function InvitePage() {
               <div className="grid gap-2 md:grid-cols-2">
                 <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
                   <div className="text-slate-500">Hosted by</div>
-                  <div className="text-xl font-semibold">Evann & Abhishek</div>
+                  <div className="text-xl font-semibold">{event.parentNames}</div>
                 </div>
 
                 <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
@@ -360,12 +262,7 @@ export default function InvitePage() {
         </header>
 
         {/* DETAILS */}
-        <Section
-          id="details"
-          title="Event Details"
-          icon={CalendarDays}
-          subtitle="Save the date & set your reminders ⏰"
-        >
+        <Section id="details" title="Event Details" icon={CalendarDays} subtitle="Save the date & set your reminders ⏰">
           <div className="grid gap-4 md:grid-cols-3">
             {[
               { label: "Date", value: event.dateLabel },
@@ -387,86 +284,24 @@ export default function InvitePage() {
           </div>
         </Section>
 
-        {/* WHAT TO EXPECT (mobile collapsible) */}
-        <MobileAccordionSection
-          id="expect"
-          title="What to expect"
-          subtitle="A few fun things planned for the day ✨"
-          icon={Sparkles}
-          open={openExpect}
-          setOpen={setOpenExpect}
-        >
-          <div className="space-y-3 text-slate-700">
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-              🍼 Baby-themed games & giggles
-            </div>
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-              🍰 Snacks + sweet treats
-            </div>
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-              💙 Lots of love for the mother-to-be
-            </div>
+        {/* ✅ What to expect - NOT collapsible anymore */}
+        <Section id="expect" title="What to expect" icon={Sparkles} subtitle="A few fun things planned for the day ✨">
+          <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5 space-y-3 text-slate-700">
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">🍼 Baby-themed games & giggles</div>
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">🍰 Snacks + sweet treats</div>
+            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">💙 Lots of love for the parents-to-be</div>
           </div>
-        </MobileAccordionSection>
+        </Section>
 
-        {/* GALLERY (mobile collapsible + desktop section) */}
-        <MobileAccordionSection
-          id="gallery"
-          title="Maternity Photos"
-          subtitle="Tap to view 💙"
-          icon={Images}
-          open={openPhotos}
-          setOpen={setOpenPhotos}
-        >
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              "https://images.unsplash.com/photo-1520975958225-6d294b3f8f64?auto=format&fit=crop&w=1200&q=60",
-              "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=60",
-              "https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1200&q=60",
-              "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=60",
-            ].map((src, i) => (
-              <div
-                key={src}
-                className="rounded-3xl overflow-hidden bg-white/70 shadow-soft ring-1 ring-black/5"
-              >
-                <img src={src} alt={`maternity-${i}`} className="h-32 w-full object-cover" loading="lazy" />
-              </div>
-            ))}
-          </div>
-        </MobileAccordionSection>
-
-        <div className="hidden md:block">
-          <Section id="gallery-desktop" title="Maternity Photos" icon={Images} subtitle="A few sweet moments 💙">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                "https://images.unsplash.com/photo-1520975958225-6d294b3f8f64?auto=format&fit=crop&w=1200&q=60",
-                "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=1200&q=60",
-                "https://images.unsplash.com/photo-1518837695005-2083093ee35b?auto=format&fit=crop&w=1200&q=60",
-                "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=60",
-              ].map((src, i) => (
-                <motion.div
-                  key={src}
-                  className="rounded-3xl overflow-hidden bg-white/70 shadow-soft ring-1 ring-black/5"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.04 }}
-                  whileHover={{ scale: 1.01 }}
-                >
-                  <img src={src} alt={`maternity-${i}`} className="h-40 w-full object-cover" loading="lazy" />
-                </motion.div>
-              ))}
-            </div>
-          </Section>
-        </div>
+        {/* ✅ Maternity photos removed/commented for now */}
+        {/*
+        <Section id="gallery" title="Maternity Photos" icon={Images} subtitle="We'll decide later 💙">
+          ...
+        </Section>
+        */}
 
         {/* REGISTRY */}
-        <Section
-          id="registry"
-          title="Registry"
-          icon={Gift}
-          subtitle="If you’d like to bring a gift, here are our registries 💙"
-        >
+        <Section id="registry" title="Registry" icon={Gift} subtitle="If you’d like to bring a gift, here are our registries 💙">
           <div className="flex flex-col sm:flex-row gap-3">
             <a
               href={event.amazonRegistry}
@@ -476,7 +311,6 @@ export default function InvitePage() {
             >
               🛒 Amazon
             </a>
-
             <a
               href={event.babylistRegistry}
               target="_blank"
@@ -489,158 +323,110 @@ export default function InvitePage() {
         </Section>
 
         {/* DRESS CODE */}
-        <Section id="dresscode" title="Dress Code" icon={Shirt} subtitle="Let’s make the photos extra adorable 📸">
+        <Section id="dresscode" title="Dress Code" icon={Shirt} subtitle="Comfort > everything 💙">
           <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
             <p className="text-slate-700 text-lg">{event.dressCode}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Chip icon={Sparkles}>Pastels</Chip>
-              <Chip icon={Star}>Cozy</Chip>
-              <Chip icon={Heart}>Camera-ready</Chip>
+              <Chip icon={Sparkles}>Comfy</Chip>
+              <Chip icon={Heart}>Cozy</Chip>
+              <Chip icon={Star}>You do you</Chip>
             </div>
           </div>
         </Section>
 
-        {/* RSVP */}
-        <Section id="rsvp" title="RSVP" icon={Send} subtitle="Mobile-friendly: big buttons, quick flow, done ✅">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
-              <div className="flex items-center gap-2">
-                <div className="rounded-2xl bg-blue-100 p-2 ring-1 ring-black/5">
-                  <Baby className="h-5 w-5" />
-                </div>
-                <h3 className="text-xl font-semibold">Confirm your spot 💙</h3>
+        {/* ✅ RSVP (no email field; no find name; max 10) */}
+        <Section id="rsvp" title="RSVP" icon={Send} subtitle="RSVP by 10th Jan 2026">
+          <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
+            <div className="flex items-center gap-2">
+              <div className="rounded-2xl bg-blue-100 p-2 ring-1 ring-black/5">
+                <Baby className="h-5 w-5" />
               </div>
+              <h3 className="text-xl font-semibold">Confirm your spot 💙</h3>
+            </div>
 
-              <form className="mt-5 space-y-3" onSubmit={step === "check" ? onCheckGuest : onSubmitRSVP}>
-                <label className="block">
-                  <span className="text-sm text-slate-700">Your Name</span>
-                  <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="mt-1 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="e.g., Abhishek Goel"
-                    required
-                  />
-                </label>
+            <form className="mt-5 space-y-3" onSubmit={onSubmitRSVP}>
+              <label className="block">
+                <span className="text-sm text-slate-700">Your Name</span>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
+                  placeholder="e.g., Abhishek Goel"
+                  required
+                />
+              </label>
 
-                <label className="block">
-                  <span className="text-sm text-slate-700">Your Email (optional)</span>
-                  <input
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    className="mt-1 w-full rounded-2xl border border-black/10 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-blue-300"
-                    placeholder="e.g., you@example.com"
-                  />
-                </label>
-
-                {step === "form" ? (
-                  <div className="rounded-2xl bg-blue-50 ring-1 ring-blue-200 p-4">
-                    <div className="text-sm text-slate-700">
-                      You can add up to <span className="font-semibold">{maxSlots}</span> guest(s).
-                    </div>
-
-                    <div className="mt-3 space-y-3">
-                      {attendees.map((a, idx) => (
-                        <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
-                          <div className="flex gap-2">
-                            <input
-                              value={a.name}
-                              onChange={(e) => updateAttendee(idx, { name: e.target.value })}
-                              className="flex-1 rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
-                              placeholder="Guest name"
-                            />
-                            <select
-                              value={a.age}
-                              onChange={(e) => updateAttendee(idx, { age: e.target.value })}
-                              className="rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
-                            >
-                              <option value="adult">Adult</option>
-                              <option value="child">Child</option>
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => removeAttendee(idx)}
-                              className="rounded-2xl px-3 py-2 bg-white ring-1 ring-black/10 hover:bg-slate-50 active:scale-[0.98] transition"
-                              title="Remove"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={addAttendee}
-                      disabled={attendees.length >= maxSlots}
-                      className={cx(
-                        "mt-3 w-full rounded-2xl px-4 py-2 bg-white ring-1 ring-black/10 hover:bg-slate-50 active:scale-[0.99] transition",
-                        attendees.length >= maxSlots && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      Add another guest ➕
-                    </button>
+              <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-medium">Plus-ones (optional)</div>
+                    <div className="text-sm text-slate-600">Max {MAX_PLUS_ONES}</div>
                   </div>
-                ) : null}
-
-                {status.msg ? (
-                  <div
+                  <button
+                    type="button"
+                    onClick={addAttendee}
+                    disabled={attendees.length >= MAX_PLUS_ONES}
                     className={cx(
-                      "rounded-2xl p-3 text-sm ring-1",
-                      status.type === "ok" && "bg-emerald-50 ring-emerald-200 text-emerald-900",
-                      status.type === "warn" && "bg-amber-50 ring-amber-200 text-amber-900",
-                      status.type === "error" && "bg-rose-50 ring-rose-200 text-rose-900"
+                      "rounded-2xl bg-white/80 px-4 py-2 shadow-soft ring-1 ring-black/5 hover:bg-white transition",
+                      attendees.length >= MAX_PLUS_ONES && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    {status.msg}
-                  </div>
-                ) : null}
-
-                {step === "check" ? (
-                  <button
-                    className="w-full rounded-2xl bg-slate-900 text-white px-5 py-3 shadow-soft active:scale-[0.99] transition disabled:opacity-60"
-                    disabled={loading}
-                  >
-                    {loading ? "Checking..." : "Find My Name ✨"}
+                    + Add
                   </button>
-                ) : step === "form" ? (
-                  <button
-                    className="w-full rounded-2xl bg-blue-600 text-white px-5 py-3 shadow-soft active:scale-[0.99] transition disabled:opacity-60"
-                    disabled={loading}
-                  >
-                    {loading ? "Submitting..." : "Submit RSVP 💙"}
-                  </button>
-                ) : (
-                  <a
-                    href="#top"
-                    className="block text-center w-full rounded-2xl bg-slate-900 text-white px-5 py-3 shadow-soft active:scale-[0.99] transition"
-                  >
-                    Back to Top ⭐️
-                  </a>
-                )}
-              </form>
-            </div>
+                </div>
 
-            <div className="hidden md:block">
-              <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
-                <h3 className="text-xl font-semibold flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" /> What to expect
-                </h3>
-
-                <div className="mt-4 space-y-3 text-slate-700">
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-                    🍼 Baby-themed games & giggles
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-                    🍰 Snacks + sweet treats
-                  </div>
-                  <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-                    💙 Lots of love for the mother-to-be
-                  </div>
+                <div className="mt-3 grid gap-2">
+                  {attendees.map((a, idx) => (
+                    <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
+                      <div className="flex gap-2">
+                        <input
+                          value={a.name}
+                          onChange={(e) => updateAttendee(idx, { name: e.target.value })}
+                          className="flex-1 rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
+                          placeholder={`Guest ${idx + 1} name`}
+                        />
+                        <select
+                          value={a.age}
+                          onChange={(e) => updateAttendee(idx, { age: e.target.value })}
+                          className="rounded-2xl border border-black/10 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-blue-300"
+                        >
+                          <option value="adult">Adult</option>
+                          <option value="child">Child</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => removeAttendee(idx)}
+                          className="rounded-2xl px-3 py-2 bg-white ring-1 ring-black/10 hover:bg-slate-50 active:scale-[0.98] transition"
+                          title="Remove"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+
+              {status.msg ? (
+                <div
+                  className={cx(
+                    "rounded-2xl p-3 text-sm ring-1",
+                    status.type === "ok" && "bg-emerald-50 ring-emerald-200 text-emerald-900",
+                    status.type === "warn" && "bg-amber-50 ring-amber-200 text-amber-900",
+                    status.type === "error" && "bg-rose-50 ring-rose-200 text-rose-900"
+                  )}
+                >
+                  {status.msg}
+                </div>
+              ) : null}
+
+              <button
+                className="w-full rounded-2xl bg-blue-600 text-white px-5 py-3 shadow-soft active:scale-[0.99] transition disabled:opacity-60"
+                disabled={loading}
+              >
+                {loading ? "Submitting..." : "Submit RSVP 💙"}
+              </button>
+            </form>
           </div>
         </Section>
 

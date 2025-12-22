@@ -6,22 +6,23 @@ export default function HostDashboard() {
   const [authed, setAuthed] = useState(false);
   const [error, setError] = useState("");
 
-  const [guests, setGuests] = useState([]);
   const [rsvps, setRsvps] = useState([]);
 
-  const [newName, setNewName] = useState("");
-  const [newPlus, setNewPlus] = useState(0);
-  const [newKids, setNewKids] = useState(0);
+  // editor
+  const [editingId, setEditingId] = useState(null); // "new" | rsvpId | null
+  const [primaryName, setPrimaryName] = useState("");
+  const [attendees, setAttendees] = useState([]); // plus-ones only
+  const MAX_PLUS_ONES = 10;
 
   const totals = useMemo(() => {
-    const totalAttending = rsvps.reduce((sum, r) => sum + (r.total_attending || 0), 0);
+    // total attending = primary guest (1) + plus-ones count
+    const totalAttending = rsvps.reduce((sum, r) => sum + 1 + (r?.rsvp_attendees?.length || 0), 0);
     return { totalAttending, totalRsvps: rsvps.length };
   }, [rsvps]);
 
   async function refresh(k) {
-    const [g, r] = await Promise.all([api.adminListGuests(k), api.adminListRsvps(k)]);
-    setGuests(g);
-    setRsvps(r);
+    const data = await api.admin.listRSVPs(k);
+    setRsvps(data?.rsvps || []);
   }
 
   async function verifyAndEnter(k) {
@@ -41,6 +42,73 @@ export default function HostDashboard() {
     if (adminKey) verifyAndEnter(adminKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function startCreate() {
+    setEditingId("new");
+    setPrimaryName("");
+    setAttendees([]);
+  }
+
+  function startEdit(r) {
+    setEditingId(r.id);
+    setPrimaryName(r.primary_guest_name || "");
+    setAttendees((r.rsvp_attendees || []).map((a) => ({ name: a.name, age: a.age })));
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setPrimaryName("");
+    setAttendees([]);
+  }
+
+  function addAttendee() {
+    setAttendees((prev) => (prev.length >= MAX_PLUS_ONES ? prev : [...prev, { name: "", age: "adult" }]));
+  }
+
+  function updateAttendee(i, patch) {
+    setAttendees((prev) => prev.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
+  }
+
+  function removeAttendee(i) {
+    setAttendees((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function save() {
+    setError("");
+    const primaryGuest = String(primaryName || "").trim();
+    if (!primaryGuest) {
+      setError("Primary guest name is required.");
+      return;
+    }
+
+    const cleaned = attendees
+      .map((a) => ({ name: String(a.name || "").trim(), age: a.age === "child" ? "child" : "adult" }))
+      .filter((a) => a.name.length > 0)
+      .slice(0, MAX_PLUS_ONES);
+
+    try {
+      if (editingId === "new") {
+        await api.admin.createRSVP(adminKey, { primaryGuest, attendees: cleaned });
+      } else {
+        await api.admin.updateRSVP(adminKey, editingId, { primaryGuest, attendees: cleaned });
+      }
+      cancelEdit();
+      await refresh(adminKey);
+    } catch (e) {
+      setError(e?.message || "Failed to save RSVP.");
+    }
+  }
+
+  async function del(id) {
+    if (!confirm("Delete this RSVP?")) return;
+    setError("");
+    try {
+      await api.admin.deleteRSVP(adminKey, id);
+      await refresh(adminKey);
+    } catch (e) {
+      setError(e?.message || "Failed to delete RSVP.");
+    }
+  }
 
   if (!authed) {
     return (
@@ -71,7 +139,7 @@ export default function HostDashboard() {
   }
 
   return (
-    <div className="min-h-screen p-6 space-y-8">
+    <div className="min-h-screen p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Host Dashboard</h1>
@@ -80,139 +148,143 @@ export default function HostDashboard() {
           </div>
         </div>
 
-        <button
-          className="rounded-2xl bg-white/80 px-4 py-2 ring-1 ring-black/10"
-          onClick={() => {
-            sessionStorage.removeItem("ADMIN_KEY");
-            setAuthed(false);
-          }}
-        >
-          Lock
-        </button>
-      </div>
+        <div className="flex gap-2">
+          <button
+            className="rounded-2xl bg-white/80 px-4 py-2 ring-1 ring-black/10"
+            onClick={startCreate}
+          >
+            Add RSVP
+          </button>
 
-      {/* Add Guest */}
-      <div className="rounded-3xl bg-white/80 p-5 shadow-soft ring-1 ring-black/5">
-        <h2 className="text-xl font-semibold">Add Guest</h2>
-
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
-          <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Full name (exact match)"
-            className="md:col-span-2 rounded-2xl bg-white px-4 py-3 ring-1 ring-black/10"
-          />
-          <input
-            type="number"
-            value={newPlus}
-            onChange={(e) => setNewPlus(Number(e.target.value))}
-            className="rounded-2xl bg-white px-4 py-3 ring-1 ring-black/10"
-          />
-          <input
-            type="number"
-            value={newKids}
-            onChange={(e) => setNewKids(Number(e.target.value))}
-            className="rounded-2xl bg-white px-4 py-3 ring-1 ring-black/10"
-          />
+          <button
+            className="rounded-2xl bg-white/80 px-4 py-2 ring-1 ring-black/10"
+            onClick={() => {
+              sessionStorage.removeItem("ADMIN_KEY");
+              setAuthed(false);
+            }}
+          >
+            Lock
+          </button>
         </div>
-
-        <button
-          className="mt-4 rounded-2xl bg-[#EAF6FF] px-4 py-3 font-semibold ring-1 ring-black/5 hover:bg-[#DDF0FF] transition"
-          onClick={async () => {
-            if (!newName.trim()) return;
-            await api.adminAddGuest(adminKey, {
-              full_name: newName.trim(),
-              plus_ones_allowed: newPlus,
-              kids_allowed: newKids,
-            });
-            setNewName("");
-            setNewPlus(0);
-            setNewKids(0);
-            await refresh(adminKey);
-          }}
-        >
-          Add guest
-        </button>
       </div>
 
-      {/* Guest List */}
-      <div className="rounded-3xl bg-white/80 p-5 shadow-soft ring-1 ring-black/5">
-        <h2 className="text-xl font-semibold">Guest List</h2>
+      {error ? <div className="text-sm text-red-600">{error}</div> : null}
 
-        <div className="mt-4 space-y-3">
-          {guests.map((g) => (
-            <div key={g.id} className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold">{g.full_name}</div>
-                  <div className="text-sm text-slate-600">
-                    Plus ones: {g.plus_ones_allowed} • Kids: {g.kids_allowed}
+      {/* Editor */}
+      {editingId ? (
+        <div className="rounded-3xl bg-white/80 p-5 shadow-soft ring-1 ring-black/5">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">{editingId === "new" ? "Add RSVP" : "Edit RSVP"}</h2>
+            <button className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10" onClick={cancelEdit}>
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4">
+            <div className="text-sm text-slate-600">Primary guest name</div>
+            <input
+              value={primaryName}
+              onChange={(e) => setPrimaryName(e.target.value)}
+              className="mt-1 w-full rounded-2xl bg-white px-4 py-3 ring-1 ring-black/10"
+              placeholder="Full name"
+            />
+          </div>
+
+          <div className="mt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold">Plus-ones (max {MAX_PLUS_ONES})</div>
+                <div className="text-sm text-slate-600">Leave blank entries empty.</div>
+              </div>
+              <button className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10" onClick={addAttendee}>
+                + Add
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              {attendees.map((a, idx) => (
+                <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
+                  <div className="flex gap-2">
+                    <input
+                      value={a.name}
+                      onChange={(e) => updateAttendee(idx, { name: e.target.value })}
+                      className="flex-1 rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                      placeholder={`Guest ${idx + 1} name`}
+                    />
+                    <select
+                      value={a.age}
+                      onChange={(e) => updateAttendee(idx, { age: e.target.value })}
+                      className="rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                    >
+                      <option value="adult">Adult</option>
+                      <option value="child">Child</option>
+                    </select>
+                    <button
+                      className="rounded-2xl bg-white px-3 py-2 ring-1 ring-black/10"
+                      onClick={() => removeAttendee(idx)}
+                      title="Remove"
+                    >
+                      ✕
+                    </button>
                   </div>
                 </div>
+              ))}
 
-                <div className="flex gap-2">
-                  <button
-                    className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10"
-                    onClick={async () => {
-                      const plus = prompt("Plus ones allowed:", String(g.plus_ones_allowed));
-                      const kids = prompt("Kids allowed:", String(g.kids_allowed));
-                      if (plus === null || kids === null) return;
-
-                      await api.adminUpdateGuest(adminKey, g.id, {
-                        plus_ones_allowed: Number(plus),
-                        kids_allowed: Number(kids),
-                      });
-                      await refresh(adminKey);
-                    }}
-                  >
-                    Edit
-                  </button>
-
-                  <button
-                    className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10"
-                    onClick={async () => {
-                      if (!confirm(`Delete ${g.full_name}?`)) return;
-                      await api.adminDeleteGuest(adminKey, g.id);
-                      await refresh(adminKey);
-                    }}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+              {attendees.length === 0 ? <div className="text-sm text-slate-600">No plus-ones.</div> : null}
             </div>
-          ))}
+          </div>
 
-          {guests.length === 0 ? <div className="text-sm text-slate-600">No guests yet.</div> : null}
+          <button
+            className="mt-4 rounded-2xl bg-[#EAF6FF] px-4 py-3 font-semibold ring-1 ring-black/5 hover:bg-[#DDF0FF] transition"
+            onClick={save}
+          >
+            Save RSVP
+          </button>
         </div>
-      </div>
+      ) : null}
 
-      {/* RSVPs */}
+      {/* RSVPs list */}
       <div className="rounded-3xl bg-white/80 p-5 shadow-soft ring-1 ring-black/5">
         <h2 className="text-xl font-semibold">RSVPs</h2>
 
         <div className="mt-4 space-y-3">
-          {rsvps.map((r) => (
-            <div key={`${r.guest_id}-${r.updated_at}`} className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
-              <div className="font-semibold">{r.guest_name}</div>
-              <div className="text-sm text-slate-600">
-                Attending: <b>{r.total_attending}</b> / Allowed: <b>{r.total_allowed}</b>
-                {r.email ? ` • ${r.email}` : ""}
-              </div>
-              <div className="text-xs text-slate-500 mt-1">
-                Updated: {new Date(r.updated_at).toLocaleString()}
-              </div>
+          {rsvps.map((r) => {
+            const plusOnes = r.rsvp_attendees || [];
+            return (
+              <div key={r.id} className="rounded-2xl bg-white p-4 ring-1 ring-black/5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-semibold">{r.primary_guest_name}</div>
+                    <div className="text-sm text-slate-600">
+                      Attending: <b>{1 + plusOnes.length}</b> (Primary + {plusOnes.length} plus-ones)
+                    </div>
 
-              <div className="mt-3 text-sm">
-                <div className="font-semibold mb-1">Attendees</div>
-                <ul className="list-disc pl-5 text-slate-700">
-                  {r.attendees.map((a, i) => (
-                    <li key={i}>{a}</li>
-                  ))}
-                </ul>
+                    {plusOnes.length ? (
+                      <div className="mt-2 text-sm text-slate-700">
+                        <div className="font-semibold mb-1">Plus-ones</div>
+                        <ul className="list-disc pl-5">
+                          {plusOnes.map((a) => (
+                            <li key={a.id || `${a.name}-${a.age}`}>{a.name} ({a.age})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-sm text-slate-600">No plus-ones.</div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10" onClick={() => startEdit(r)}>
+                      Edit
+                    </button>
+                    <button className="rounded-xl bg-white px-3 py-2 ring-1 ring-black/10" onClick={() => del(r.id)}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {rsvps.length === 0 ? <div className="text-sm text-slate-600">No RSVPs yet.</div> : null}
         </div>
