@@ -28,6 +28,23 @@ function Twinkle({ className, delay = 0, children }) {
   );
 }
 
+function SubmittingOverlay() {
+  return (
+    <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex items-center justify-center px-6">
+      <div className="w-full max-w-sm rounded-3xl bg-white shadow-xl ring-1 ring-black/5 p-6 text-center">
+        <div className="text-3xl mb-3 animate-pulse">💙</div>
+        <h3 className="text-lg font-semibold text-slate-900">
+          Submitting your RSVP…
+        </h3>
+        <p className="mt-2 text-sm text-slate-600">
+          This may take a few moments. Please don’t refresh — we’ve got it 🙂
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
 function Chip({ icon: Icon, children }) {
   return (
     <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm shadow-soft ring-1 ring-black/5">
@@ -67,7 +84,7 @@ export default function InvitePage() {
       babyName: "Our Baby Boy",
       parentNames: "Evann & Abhishek",
       dateLabel: "Saturday, Jan 31st, 2026",
-      timeLabel: "12:00 PM",
+      timeLabel: "12:30 PM",
       locationLabel: "Issaquah Community Center",
       mapsUrl: "https://maps.google.com/?q=Issaquah%20Community%20Center",
       amazonRegistry: "https://www.amazon.com/baby-reg/evann-goel-march-2026-issaquah/426YVA1Z363P",
@@ -142,6 +159,7 @@ export default function InvitePage() {
     <>
       <div className="fixed inset-0 -z-10 bg-white/25 backdrop-blur-[2px]" />
       <div id="top" className="min-h-screen">
+          {loading && <SubmittingOverlay />}
         {/* Background photo */}
         <div className="fixed inset-0 -z-10 bg-center bg-cover" style={{ backgroundImage: "url(/bg2.png)" }}>
           <div className="absolute inset-0 bg-white/35" />
@@ -172,7 +190,7 @@ export default function InvitePage() {
             <div className="shrink-0 rounded-xl bg-blue-100 p-2 ring-1 ring-black/5">📌</div>
             <div className="min-w-0">
               <div className="font-semibold text-slate-900">
-                Please RSVP by <span className="underline underline-offset-4">January 10, 2026</span>
+                Please RSVP by <span className="underline underline-offset-4">January 18, 2026</span>
               </div>
               <div className="text-sm text-slate-600">
                 It helps us plan food, seating, and all the cute little details 💙
@@ -196,7 +214,7 @@ export default function InvitePage() {
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
               {[
                 ["Details", "#details"],
-                ["Expect", "#expect"],
+                ["Expectations", "#expect"],
                 // photos removed for now
                 ["Registry", "#registry"],
                 ["Dress", "#dresscode"],
@@ -299,14 +317,38 @@ export default function InvitePage() {
           </div>
         </Section>
 
+
         {/* ✅ What to expect - NOT collapsible anymore */}
-        <Section id="expect" title="What to expect" icon={Sparkles} subtitle="A few fun things planned for the day ✨">
-          <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5 space-y-3 text-slate-700">
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">🍼 Baby-themed games & giggles</div>
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">🍰 Snacks + sweet treats</div>
-            <div className="rounded-2xl bg-white p-4 ring-1 ring-black/5">💙 Lots of love for the parents-to-be</div>
+        <Section
+          id="expect"
+          title="What to expect"
+          icon={Sparkles}
+          subtitle="A few fun things planned for the day ✨"
+        >
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5">
+              <div className="text-sm text-slate-500">🍼 Activities</div>
+              <div className="mt-1 text-slate-800">
+                Baby-themed games & giggles
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5">
+              <div className="text-sm text-slate-500">🍰 Treats</div>
+              <div className="mt-1 text-slate-800">
+                Snacks, sweets, and a few tasty surprises
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5 md:col-span-2">
+              <div className="text-sm text-slate-500">💙 The vibe</div>
+              <div className="mt-1 text-slate-800">
+                Lots of love for the parents-to-be
+              </div>
+            </div>
           </div>
         </Section>
+
 
         {/* ✅ Maternity photos removed/commented for now */}
         {/*
@@ -314,6 +356,39 @@ export default function InvitePage() {
           ...
         </Section>
         */}
+
+        <Section
+                  id="good-to-know"
+                  title="Good to know"
+                  icon={Sparkles}
+                  subtitle="Quick details to make your visit easy 💙"
+                >
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {/* Parking - Option C */}
+                    <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5">
+                      <div className="text-sm text-slate-500">🚗 Parking</div>
+                      <div className="mt-1 text-slate-800">
+                        Free parking is available on-site
+                      </div>
+                    </div>
+
+                    {/* Kids */}
+                    <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5">
+                      <div className="text-sm text-slate-500">👶 Kids</div>
+                      <div className="mt-1 text-slate-800">
+                        Kids are welcome! The venue is stroller-friendly.
+                      </div>
+                    </div>
+
+                    {/* Photos */}
+                    <div className="rounded-3xl bg-white/75 p-5 shadow-soft ring-1 ring-black/5">
+                      <div className="text-sm text-slate-500">📸 Photos</div>
+                      <div className="mt-1 text-slate-800">
+                        We’ll be taking a few photos — feel free to join in, and no worries if you’d rather not.
+                      </div>
+                    </div>
+                  </div>
+                </Section>
 
         {/* REGISTRY */}
         <Section id="registry" title="Registry" icon={Gift} subtitle="Gifts are not expected, but for those who wish to, we’ve shared our registries below 💙">
@@ -350,7 +425,7 @@ export default function InvitePage() {
         </Section>
 
         {/* ✅ RSVP (no email field; no find name; max 10) */}
-        <Section id="rsvp" title="RSVP" icon={Send} subtitle="Kindly RSVP by January 10, 2026">
+        <Section id="rsvp" title="RSVP" icon={Send} subtitle="Kindly RSVP by January 18, 2026">
           <div className="rounded-3xl bg-white/75 p-6 shadow-soft ring-1 ring-black/5">
             <div className="flex items-center gap-2">
               <div className="rounded-2xl bg-blue-100 p-2 ring-1 ring-black/5">
@@ -439,10 +514,15 @@ export default function InvitePage() {
               ) : null}
 
               <button
-                className="w-full rounded-2xl bg-blue-600 text-white px-5 py-3 shadow-soft active:scale-[0.99] transition disabled:opacity-60"
+                type="submit"
                 disabled={loading}
+                className={`rounded-2xl px-5 py-3 font-semibold transition
+                  ${loading
+                    ? "bg-slate-300 text-slate-600 cursor-not-allowed"
+                    : "bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98]"}
+                `}
               >
-                {loading ? "Submitting..." : "Submit RSVP 💙"}
+                {loading ? "Submitting…" : "Submit RSVP 💙"}
               </button>
             </form>
           </div>
@@ -451,6 +531,17 @@ export default function InvitePage() {
         <footer className="pb-24 md:pb-10 pt-8 text-center text-sm text-slate-600">
           Made with Love by Goel Family 💙
         </footer>
+
+        {/* Mobile-only RSVP Now button */}
+        <div className="fixed bottom-4 left-0 right-0 z-40 px-4 sm:hidden">
+          <a
+            href="#rsvp"
+            className="block w-full rounded-2xl bg-blue-600 text-white text-center px-5 py-3 font-semibold shadow-lg active:scale-[0.98] transition"
+          >
+            RSVP Now 💙
+          </a>
+        </div>
+
       </div>
     </>
   );
