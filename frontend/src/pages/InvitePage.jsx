@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Baby, CalendarDays, MapPin, Gift, Shirt, Sparkles, Heart, Send, Star, Moon } from "lucide-react";
 import { api } from "../lib/api";
@@ -78,6 +78,7 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
 };
 
+
 export default function InvitePage() {
   const event = useMemo(
     () => ({
@@ -104,6 +105,7 @@ export default function InvitePage() {
   const [loading, setLoading] = useState(false);
 
   const MAX_PLUS_ONES = 10;
+  const lastGuestRef = useRef(null);
 
   function setMsg(type, msg) {
     setStatus({ type, msg });
@@ -114,9 +116,17 @@ export default function InvitePage() {
   }
 
   function addAttendee() {
-    if (attendees.length >= MAX_PLUS_ONES) return;
-    setAttendees((prev) => [...prev, { name: "", age: "adult" }]);
+    setAttendees((prev) => {
+      if (prev.length >= MAX_PLUS_ONES) return prev;
+      return [...prev, { name: "", age: "adult" }];
+    });
+
+    // scroll to the new row after it renders
+    setTimeout(() => {
+      lastGuestRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
   }
+
 
   function removeAttendee(i) {
     setAttendees((prev) => prev.filter((_, idx) => idx !== i));
@@ -452,22 +462,19 @@ export default function InvitePage() {
                     <div className="font-medium">Plus-ones (optional)</div>
                     <div className="text-sm text-slate-600">Max {MAX_PLUS_ONES}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={addAttendee}
-                    disabled={attendees.length >= MAX_PLUS_ONES}
-                    className={cx(
-                      "rounded-2xl bg-white/80 px-4 py-2 shadow-soft ring-1 ring-black/5 hover:bg-white transition",
-                      attendees.length >= MAX_PLUS_ONES && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    + Add
-                  </button>
+
                 </div>
 
                 <div className="mt-3 grid gap-2">
-                  {attendees.map((a, idx) => (
-                    <div key={idx} className="rounded-2xl bg-white p-3 ring-1 ring-black/5">
+                  {attendees.map((a, idx) => {
+                    const isLast = idx === attendees.length - 1;
+
+                    return (
+                      <div
+                        key={idx}
+                        ref={isLast ? lastGuestRef : null}
+                        className="rounded-2xl bg-white p-3 ring-1 ring-black/5"
+                      >
                       <div className="grid grid-cols-1 sm:grid-cols-[1fr_160px_44px] gap-2 items-center">
                         <input
                           value={a.name}
@@ -495,9 +502,31 @@ export default function InvitePage() {
                           ✕
                         </button>
                       </div>
-                    </div>
-                  ))}
+                        </div>
+                      );
+                    })}
                 </div>
+
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-slate-600">
+                    You can add up to <b>{MAX_PLUS_ONES}</b> guests.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={addAttendee}
+                    disabled={attendees.length >= MAX_PLUS_ONES}
+                    className={cx(
+                      "w-full sm:w-auto rounded-2xl px-4 py-3 font-semibold transition",
+                      attendees.length >= MAX_PLUS_ONES
+                        ? "bg-slate-200 text-slate-500 cursor-not-allowed"
+                        : "bg-white/80 ring-1 ring-black/10 hover:bg-white active:scale-[0.99]"
+                    )}
+                  >
+                    + Add guest
+                  </button>
+                </div>
+
               </div>
 
               {status.msg ? (
