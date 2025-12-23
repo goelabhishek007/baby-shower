@@ -253,9 +253,6 @@ export default function InvitePage() {
 
               <h1 className="mt-4 text-4xl md:text-5xl font-semibold leading-tight">
                 A little boy is on the way <span className="align-middle">💙</span>
-{/*                 <span className="block"> */}
-{/*                   Baby Shower <span className="align-middle">💙</span> */}
-{/*                 </span> */}
               </h1>
 
               <p className="mt-3 text-slate-700 text-lg">{event.note}</p>
